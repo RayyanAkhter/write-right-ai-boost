@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Settings, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { publishToWordPress } from "@/services/wordpressService";
 
 const ContentCreationPage = () => {
   const [topic, setTopic] = useState("");
@@ -24,6 +24,9 @@ const ContentCreationPage = () => {
   const [loading, setLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [activeTab, setActiveTab] = useState("editor");
+  const [wpUrl, setWpUrl] = useState("");
+  const [wpToken, setWpToken] = useState("");
+  const [publishLoading, setPublishLoading] = useState(false);
   
   const { toast } = useToast();
 
@@ -93,6 +96,49 @@ const ContentCreationPage = () => {
       toast({
         title: "Content Exported",
         description: "Your content has been exported as a text file.",
+      });
+    }
+  };
+
+  const handlePublishWordPress = async () => {
+    if (!wpUrl || !wpToken || !generatedContent) {
+      toast({
+        title: "WordPress Info Missing",
+        description: "Please enter your WordPress URL and access token.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPublishLoading(true);
+    const res = await publishToWordPress({
+      siteUrl: wpUrl,
+      token: wpToken,
+      title: generatedContent.title,
+      content: generatedContent.content,
+    });
+    setPublishLoading(false);
+    if (res.success) {
+      toast({
+        title: "Published!",
+        description: (
+          <span>
+            Your content was published:&nbsp;
+            <a
+              href={res.postUrl}
+              className="underline text-blue-600 dark:text-blue-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View Post
+            </a>
+          </span>
+        ),
+      });
+    } else {
+      toast({
+        title: "Failed to Publish",
+        description: res.error ?? "Unknown error",
+        variant: "destructive",
       });
     }
   };
@@ -314,14 +360,47 @@ const ContentCreationPage = () => {
                               <SelectContent>
                                 <SelectItem value="none">None (Save draft)</SelectItem>
                                 <SelectItem value="wordpress">WordPress</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="custom">Custom CMS</SelectItem>
+                                <SelectItem value="medium" disabled>Medium (coming soon)</SelectItem>
+                                <SelectItem value="custom" disabled>Custom CMS (coming soon)</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
-                          
-                          <Button className="bg-brand-600 hover:bg-brand-700">
-                            Publish Content
+                          <div className="space-y-2">
+                            <Label htmlFor="wp-url">WordPress Site URL</Label>
+                            <Input
+                              id="wp-url"
+                              type="url"
+                              placeholder="https://yourwordpresssite.com"
+                              value={wpUrl}
+                              onChange={e => setWpUrl(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="wp-token">WP Access Token</Label>
+                            <Input
+                              id="wp-token"
+                              type="password"
+                              placeholder="WordPress JWT or App Password"
+                              value={wpToken}
+                              onChange={e => setWpToken(e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Store this securely; consider saving to Supabase! JWT recommended, or see WP REST API docs.<br/>
+                              <a
+                                href="https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/"
+                                className="underline text-blue-600 dark:text-blue-300"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Learn how to get your WordPress token.</a>
+                            </p>
+                          </div>
+                          <Button
+                            className="bg-brand-600 hover:bg-brand-700"
+                            onClick={handlePublishWordPress}
+                            disabled={publishLoading}
+                          >
+                            {publishLoading ? "Publishing..." : "Publish to WordPress"}
                           </Button>
                         </div>
                       </div>
