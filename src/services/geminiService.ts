@@ -1,3 +1,4 @@
+
 // This is a placeholder for the Gemini API service
 // In a real implementation, you would need to add your API key securely
 
@@ -32,17 +33,71 @@ export const generateContent = async ({
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 2000));
 
+  // Determine content size based on length parameter
+  let contentSize = {
+    short: { paragraphs: 2, pointsPerSection: 3 },
+    medium: { paragraphs: 4, pointsPerSection: 5 },
+    long: { paragraphs: 8, pointsPerSection: 7 }
+  }[length];
+  
+  // Generate tone-specific adjectives
+  const toneAdjectives = {
+    professional: ["effective", "strategic", "proven", "industry-standard", "data-driven"],
+    casual: ["cool", "awesome", "great", "fun", "handy"],
+    enthusiastic: ["amazing", "game-changing", "revolutionary", "groundbreaking", "exceptional"],
+    informative: ["important", "valuable", "essential", "fundamental", "critical"],
+    authoritative: ["definitive", "expert", "authoritative", "leading", "premium"]
+  }[tone] || ["effective", "useful", "helpful"];
+  
   // Only the actual content related to the topic is generated now (no meta or placeholder text)
   let article = `# ${topic}\n\n`;
-  article += `This article discusses ${topic}${
+  
+  // Introduction paragraph that varies based on tone
+  article += `This ${toneAdjectives[0]} article discusses ${topic}${
     keywords.length ? `, linking to keywords such as: ${keywords.join(", ")}` : ""
   }.\n\n`;
-  article += `## What is ${topic}?\n\n${topic} is a significant topic in its field.`;
-  article += `\n\n## Key Points\n\n- Understand the basics of ${topic}\n- Apply best practices\n`;
-  if (keywords.length)
-    article += keywords.map(k => `- "${k}": Related to ${topic}\n`).join("");
-  article += `\n\n## How To Succeed with ${topic}\n\nStay up to date and leverage tools for better results.\n`;
-
+  
+  // Add definition section
+  article += `## What is ${topic}?\n\n${topic} is a ${toneAdjectives[1]} topic in its field. `;
+  
+  // Add length-specific content for definition
+  if (length === "medium" || length === "long") {
+    article += `Understanding ${topic} helps professionals achieve better results in their work. `;
+  }
+  if (length === "long") {
+    article += `The history of ${topic} dates back to when experts first identified the need for structured approaches to this domain. Many leading organizations now incorporate ${topic} as a core component of their strategy. `;
+  }
+  article += `\n\n`;
+  
+  // Add key points section
+  article += `## Key Points\n\n`;
+  for (let i = 0; i < contentSize.pointsPerSection; i++) {
+    article += `- ${toneAdjectives[i % toneAdjectives.length].charAt(0).toUpperCase() + toneAdjectives[i % toneAdjectives.length].slice(1)} approaches to ${topic}${i % 2 === 0 ? ' can yield superior outcomes' : ' are worth exploring'}\n`;
+  }
+  
+  // Add keywords if available
+  if (keywords.length) {
+    article += `\n## Related Keywords\n\n`;
+    article += keywords.map(k => `- "${k}": ${toneAdjectives[2]} concept related to ${topic}\n`).join("");
+  }
+  
+  // Add how-to section
+  article += `\n## How To Succeed with ${topic}\n\n`;
+  
+  // Add paragraphs based on length
+  for (let i = 0; i < contentSize.paragraphs; i++) {
+    article += `${toneAdjectives[i % toneAdjectives.length].charAt(0).toUpperCase() + toneAdjectives[i % toneAdjectives.length].slice(1)} implementation of ${topic} requires careful planning and execution. `;
+    
+    if (i < contentSize.paragraphs - 1) {
+      article += `Consider integrating ${keywords[i % keywords.length] || topic} into your workflow for ${toneAdjectives[(i+1) % toneAdjectives.length]} results.\n\n`;
+    }
+  }
+  
+  // Add conclusion for medium and long content
+  if (length === "medium" || length === "long") {
+    article += `\n## Conclusion\n\nTo maximize the benefits of ${topic}, consistently apply these principles and stay updated with the latest developments in the field.`;
+  }
+  
   return {
     title: `The Complete Guide to ${topic}`,
     content: article,
